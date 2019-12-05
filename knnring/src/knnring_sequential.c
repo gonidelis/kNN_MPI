@@ -30,42 +30,7 @@ knnresult kNN(double *X, double *Y,  int n, int m, int d, int k)
     //allocate space for each query point's neighbors
     knn_ring.ndist = malloc(k*m*sizeof(double));
     knn_ring.nidx = malloc(k*m * sizeof(int));
-
-    /*for k = 3
-    *ndist =[ qpoint1.neigh1
-            qpoint1.neigh2]
-            qpoint1.neigh3
-            qpoint2.neigh1
-            qpoint2.neigh2
-            qpoint2.neigh3
-            ...]
-    */
-
-    /*
-    printf("\nD matrix before q-select is:\n");
-    for(int i=0 ; i<n ; i++)
-    {
-        for(int j=0; j<m; j++)
-        {
-            printf("%f, ", D[i+j*n]);
-        }
-        printf("\n");
-    }
-    */
-
-
-    /*
-    printf("\nindices[] matrix before:\n");
-    for(int i=0 ; i<n ; i++)
-    {
-        for(int j=0; j<m; j++)
-        {
-            printf("%d         ", indices[i+j*n]);
-        }
-        printf("\n");
-    }
-    */
-
+    
     for(int i=0 ; i<m; i++)
     {
         for(int j=k; j>0 ; j--)
@@ -82,52 +47,19 @@ knnresult kNN(double *X, double *Y,  int n, int m, int d, int k)
             }
             else
             {
-                //printf("i*n - i*n+n-1 -> j+i*n-1 = %d , %d, %d\n", i*n,i*n+k, j+i*n-1);
-                quickSelect(D, i*n, i*n+j, j, indices);
+                 quickSelect(D, i*n, i*n+j, j, indices);
             }
         }
     }
-
-    /*
-    printf("\nD matrix after q-select is:\n");
-    for(int i=0 ; i<n ; i++)
-    {
-        for(int j=0; j<m; j++)
-        {
-            printf("%f, ", D[i+j*n]);
-        }
-        printf("\n");
-    }
-    */
-    /*
-    printf("\nindices[] matrix after q-select:\n");
-    for(int i=0 ; i<n ; i++)
-    {
-        for(int j=0; j<m; j++)
-        {
-            printf("%d         ", indices[i+j*n]);
-        }
-        printf("\n");
-    }
-    */
 
     for(int i=0; i<k; i++)
     {
         for(int j=0; j<m; j++)
         {
-            //printf("j*n+i =%d, indices[j*n+i]=%d\n", j*n+i, indices[j*n+i]);
             knn_ring.nidx[i*m+j]=indices[j*n+i];
             knn_ring.ndist[i*m+j]=D[j*n+i];
         }
     }
-
-    /*
-    printf("ndix - ndist:\n");
-    for(int i=0;i<m*k;i++)
-    {
-        printf("%d , %f\n",knn_ring.nidx[i], knn_ring.ndist[i]);
-    }
-    */
 
     return knn_ring;
 }
@@ -142,21 +74,8 @@ double *distances(double *X, double *Y, int n, int m, int d)
     double *Xrows;
     double *Yrows;
 
-
-
     //calculate Z product using BLAS
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, m, d, 1, X, n, Y, m, 0, Z, n);
-
-    /*
-    printf("\nZ (X*Y.') matrix is:\n");
-    for(int i=0; i<m; i++){
-        for(int j=0; j<n; j++)
-        {
-            printf("%f,", Z[i+j*m]);
-        }
-        printf("\n");
-    }
-    */
 
     for(int i=0; i<m; i++){
         for(int j=0; j<n; j++)
@@ -165,29 +84,10 @@ double *distances(double *X, double *Y, int n, int m, int d)
         }
     }
 
-
-
     //Calculate sumRow(X^2), sumRow(Y^2) terms
     Xrows = sumRowPow(X, n, d);
     Yrows = sumRowPow(Y, m, d);
 
-    /*
-    printf("\nXrows matrix keeps sumRows(X^2):\n");
-    for(int i=0; i<n; i++)
-    {
-        printf("%f,", Xrows[i]);
-        printf("\n");
-    }
-    printf("\nYrows matrix keeps sumRows(Y^2):\n");
-    for(int i=0; i<m; i++)
-    {
-        printf("%f,", Yrows[i]);
-        printf("\n");
-    }
-    */
-
-
-    //printf("\nD matrix is:\n");
     for(int i=0 ; i<n ; i++)
     {
         for(int j=0; j<m; j++)
@@ -202,10 +102,7 @@ double *distances(double *X, double *Y, int n, int m, int d)
                 D[i+j*n] = sqrt(Xrows[i]+Yrows[j]-Z[i+j*n]);
 
             }
-
-            //printf("%f,", D[i+j*n]);
         }
-        //printf("\n");
     }
 
     free(Z);
@@ -294,10 +191,7 @@ double kthSmallest(double arr[], int l, int r, int k, int *indices)
 }
 
 // Driver program to test above methods
-void quickSelect(double *arr,int l, int r,int k, int *indices){
-
+void quickSelect(double *arr,int l, int r,int k, int *indices)
+{
 	kthSmallest(arr, l, r-1, k, indices);
-
-	//printf("k is:%d\n",k);
-	//printf("K-th smallest element is: %lf\n",kthSmallest(arr, 0, n - 1, k));
 }
