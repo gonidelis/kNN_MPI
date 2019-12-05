@@ -1,5 +1,5 @@
-#ifndef HELLO_WORLD_H
-#define HELLO_WORLD_H
+#ifndef KNNRING_H
+#define KNNRING_H
 
 
 // Definition of the kNN result struct
