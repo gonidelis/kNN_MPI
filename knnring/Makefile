@@ -5,7 +5,12 @@ MPICC = mpicc
 
 .PHONY: lib
 
+knnring_sequential:
+	cd src; $(CC) main.c knnring_sequential.c -lm -lcblas -o knnring_sequential;
+	./knnring_sequential
+
 lib:
+	mkdir -p lib;
 	cd src; $(CC) -c knnring_sequential.c -lm -lcblas; cd ..
 	cd src; ar rcs ../lib/knnring_sequential.a knnring_sequential.o; cd ..
 
