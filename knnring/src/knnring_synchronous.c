@@ -33,8 +33,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
     //iterate p times for each process
     for(int step = 0 ; step < world_size ; step++)
     {
-        //if(id == 0){printf("[%d]*******STEP = %d\n", id,step);}
-
         //define indices[], considering rank and step
         for(int i = 0 ; i < n ; i++)
         {
@@ -56,15 +54,8 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
             }
         }
 
-
         //calculate D(istances)[] using BLAS
         D = distances(corpus, query, n, n, d);
-
-
-        //check query array
-        //if(step==1 && id == 0)
-        //print_col_maj_array(D, n, n, id);
-
 
         //find the k nearest elements
         for(int i=0;i<n;i++){
@@ -76,26 +67,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
             }
           }
         }
-
-        /*
-        if(id == 0)
-        {
-            print_col_maj_array(D, n, n, id);
-        }
-        if( id == 0 )
-        {
-            printf("[%d]~INDICES~\n",step);
-            for(int i = 0 ; i<n ; i++)
-            {
-                for(int j = 0 ; j< n ; j++)
-                {
-                    printf("%d ", indices[i+j*n]);
-                }
-                printf("\n");
-            }
-            printf("\n");
-        }
-        */
 
         double *temp_ndist = malloc(k*n*sizeof(double));
         int *temp_idx = malloc(k*n*sizeof(int));
@@ -109,8 +80,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
 
                     knn_ring.ndist[i*n+j]=D[j*n+i];
                     knn_ring.nidx[i*n+j]=indices[j*n+i];
-
-                    //printf("%f ", indices[j*n+i]);
                 }
             }
         }
@@ -124,13 +93,9 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
                 //for all point's neighbors
                 while(index<k)
                 {
-
-                    //printf("[%d] knn[%d] - D[%d] -> %f - %f\n", i, l*n+i, i*n+m, knn_ring.ndist[l*n+i], D[i*n+m]);
                     if(knn_ring.ndist[l*n+i]<D[i*n+m])
                     {
                         temp_ndist[index*n+i]=knn_ring.ndist[l*n+i];
-
-                        //printf("temp_ndist[%d]=%f \n",index*n+i,temp_ndist[index*n+i]);
                         temp_idx[index*n+i] = knn_ring.nidx[l*n+i];
 
                         index++;
@@ -155,34 +120,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
             knn_ring.nidx = temp_idx;
         }
 
-        /*
-        if(id==0 && step==1){
-            printf("[%d] APOTHIKEYMENA TELIKWS\n", step);
-            for(int i=0 ; i<n*k ; i++)
-            {
-                printf("%d ", knn_ring.nidx[i]);
-                printf("%f\n", knn_ring.ndist[i]);
-            }
-        }
-        */
-
-        /*
-        if(step==0 && id == 0 )
-        {
-            printf("~INDICES~\n");
-            for(int i = 0 ; i<n*n ; i++)
-            {
-                //for(int j = 0 ; j< n ; j++)
-                {
-                    printf("%d ", knn_ring.nidx[i]);
-                }
-                printf("\n");
-            }
-            printf("\n");
-        }
-        */
-
-
         int src = id-1;
         if(id == 0)
         {
@@ -193,8 +130,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
         {
             MPI_Send(corpus, n*d , MPI_DOUBLE, (id+1)%world_size, 0, MPI_COMM_WORLD);
             MPI_Recv(corpus, n*d, MPI_DOUBLE, src, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-            //printf("process %d received from process %d\n", id, src);
-            //printf("[%d] corpus[0]=%f after step\n", id, corpus[0]);
         }
         else
         {
@@ -205,8 +140,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
             }
             MPI_Recv(corpus, n*d, MPI_DOUBLE, id-1, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             MPI_Send(temp_corpus, n*d, MPI_DOUBLE, (id+1)%world_size, 0, MPI_COMM_WORLD);
-            //printf("process %d received from process %d\n", id, id-1);
-            //printf("[%d] corpus[0]=%f after step\n", id, corpus[0]);
         }
     }
 
@@ -217,14 +150,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
     free(corpus);
     free(indices);
 
-    /*
-    printf("PRIN TO RETURN\n");
-    for(int i=0 ; i<n*k ; i++)
-    {
-        printf("%d ", knn_ring.nidx[i]);
-        printf("%f\n", knn_ring.ndist[i]);
-    }
-    */
     return knn_ring;
 }
 
@@ -257,21 +182,8 @@ double *distances(double *X, double *Y, int n, int m, int d)
     double *Xrows;
     double *Yrows;
 
-
-
     //calculate Z product using BLAS
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, m, d, 1, X, n, Y, m, 0, Z, n);
-
-    /*
-    printf("\nZ (X*Y.') matrix is:\n");
-    for(int i=0; i<m; i++){
-        for(int j=0; j<n; j++)
-        {
-            printf("%f,", Z[i+j*m]);
-        }
-        printf("\n");
-    }
-    */
 
     for(int i=0; i<m; i++){
         for(int j=0; j<n; j++)
@@ -280,48 +192,25 @@ double *distances(double *X, double *Y, int n, int m, int d)
         }
     }
 
-
-
     //Calculate sumRow(X^2), sumRow(Y^2) terms
     Xrows = sumRowPow(X, n, d);
     Yrows = sumRowPow(Y, m, d);
 
-    /*
-    printf("\nXrows matrix keeps sumRows(X^2):\n");
-    for(int i=0; i<n; i++)
-    {
-        printf("%f,", Xrows[i]);
-        printf("\n");
-    }
-    printf("\nYrows matrix keeps sumRows(Y^2):\n");
-    for(int i=0; i<m; i++)
-    {
-        printf("%f,", Yrows[i]);
-        printf("\n");
-    }
-    */
-
-
-    //printf("\nD matrix is:\n");
     for(int i=0 ; i<n ; i++)
     {
         for(int j=0; j<m; j++)
         {
             //! If dist < 0.000001, do it 0
-
-
-            D[i+j*n] = sqrt(Xrows[i]+Yrows[j]-Z[i+j*n]);
-
-
-            if(D[i+j*n] < 0.000001 || D[i+j*n]!=D[i+j*n])
+            if(Xrows[i]+Yrows[j]-Z[i+j*n] < 0.0000001)
             {
                 D[n*j+i]=0.0;
             }
+            else
+            {
+                D[i+j*n] = sqrt(Xrows[i]+Yrows[j]-Z[i+j*n]);
 
-            //printf("%f,", D[i+j*n]);
-
+            }
         }
-        //printf("\n");
     }
 
 
@@ -346,11 +235,6 @@ double *sumRowPow(double *X, int m , int d)
     }
     return A;
 }
-
-
-
-
-
 
 int partition(double arr[], int l, int r, int *indices)
 {
@@ -418,7 +302,4 @@ double kthSmallest(double arr[], int l, int r, int k, int *indices)
 void quickSelect(double *arr,int l, int r,int k, int *indices){
 
 	kthSmallest(arr, l, r-1, k, indices);
-
-	//printf("k is:%d\n",k);
-	//printf("K-th smallest element is: %lf\n",kthSmallest(arr, 0, n - 1, k));
 }

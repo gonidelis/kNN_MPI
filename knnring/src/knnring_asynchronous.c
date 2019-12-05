@@ -32,19 +32,9 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
         corpus[i]=query[i];
     }
 
-    //corpus[0] = id;
-
     for(int step = 0 ; step < world_size ; step++)
     {
-        int temp = id-step;
-        if(temp<0)
-        {
-            temp = world_size+temp;
-        }
-        if(corpus[0]!= temp)
-        {
-            //printf("[%d][%d] %f (start)\n", id, step, corpus[0]);
-        }
+       
         //even processes send first while odd process receive
         //first in order to avoid deadlock - achieve synchronization
         MPI_Request reqsend, reqrecv;
@@ -65,8 +55,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
             MPI_Isend(corpus_send, n*d, MPI_DOUBLE, dst, 1, MPI_COMM_WORLD, &reqsend);
             MPI_Irecv(corpus_buff, n*d, MPI_DOUBLE, src, 1, MPI_COMM_WORLD, &reqrecv);
         }
-
-
 
         //define indices[], considering rank and step
         for(int i = 0 ; i < n ; i++)
@@ -89,7 +77,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
             }
         }
 
-
         D = distances(corpus, query, n, n, d);
 
         //find the k nearest elements
@@ -102,8 +89,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
             }
           }
         }
-
-
 
         //compare local knnResult to global knnResult
         //update knnresult with every newly receives corpus
@@ -119,14 +104,11 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
 
                     knn_ring.ndist[i*n+j]=D[j*n+i];
                     knn_ring.nidx[i*n+j]=indices[j*n+i];
-
-                    //printf("%f ", indices[j*n+i]);
                 }
             }
         }
         else
         {
-
             //for every query point
             for(int i = 0 ; i < n ; i++)
             {
@@ -134,13 +116,9 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
                 //for all point's neighbors
                 while(index<k)
                 {
-
-                    //printf("[%d] knn[%d] - D[%d] -> %f - %f\n", i, l*n+i, i*n+m, knn_ring.ndist[l*n+i], D[i*n+m]);
                     if(knn_ring.ndist[l*n+i]<D[i*n+m])
                     {
                         temp_ndist[index*n+i]=knn_ring.ndist[l*n+i];
-
-                        //printf("temp_ndist[%d]=%f \n",index*n+i,temp_ndist[index*n+i]);
                         temp_idx[index*n+i] = knn_ring.nidx[l*n+i];
 
                         index++;
@@ -163,11 +141,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
 
             knn_ring.ndist = temp_ndist;
             knn_ring.nidx = temp_idx;
-        }
-
-        if(corpus[0]!=temp)
-        {
-            //printf("[%d][%d] %f (end)\n", id, step, corpus[0]);
         }
 
         if(step!=world_size-1)
@@ -193,11 +166,6 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
     return knn_ring;
 }
 
-
-
-
-
-
 double *distances(double *X, double *Y, int n, int m, int d)
 {
     //D(istances) array
@@ -208,21 +176,8 @@ double *distances(double *X, double *Y, int n, int m, int d)
     double *Xrows;
     double *Yrows;
 
-
-
     //calculate Z product using BLAS
     cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, m, d, 1, X, n, Y, m, 0, Z, n);
-
-    /*
-    printf("\nZ (X*Y.') matrix is:\n");
-    for(int i=0; i<m; i++){
-        for(int j=0; j<n; j++)
-        {
-            printf("%f,", Z[i+j*m]);
-        }
-        printf("\n");
-    }
-    */
 
     for(int i=0; i<m; i++){
         for(int j=0; j<n; j++)
@@ -231,48 +186,25 @@ double *distances(double *X, double *Y, int n, int m, int d)
         }
     }
 
-
-
     //Calculate sumRow(X^2), sumRow(Y^2) terms
     Xrows = sumRowPow(X, n, d);
     Yrows = sumRowPow(Y, m, d);
 
-    /*
-    printf("\nXrows matrix keeps sumRows(X^2):\n");
-    for(int i=0; i<n; i++)
-    {
-        printf("%f,", Xrows[i]);
-        printf("\n");
-    }
-
-    printf("\nYrows matrix keeps sumRows(Y^2):\n");
-    for(int i=0; i<m; i++)
-    {
-        printf("%f,", Yrows[i]);
-        printf("\n");
-    }
-    */
-
-
-    //printf("\nD matrix is:\n");
     for(int i=0 ; i<n ; i++)
     {
         for(int j=0; j<m; j++)
         {
             //! If dist < 0.000001, do it 0
-
-            D[i+j*n] = sqrt(Xrows[i]+Yrows[j]-Z[i+j*n]);
-
-
-            if(D[n*j+i]< 0.000001 || D[n*j+i]!=D[n*j+i])
+            if(Xrows[i]+Yrows[j]-Z[i+j*n] < 0.0000001)
             {
                 D[n*j+i]=0.0;
             }
+            else
+            {
+                D[i+j*n] = sqrt(Xrows[i]+Yrows[j]-Z[i+j*n]);
 
-            //printf("%f,", D[i+j*n]);
-
+            }
         }
-        //printf("\n");
     }
 
 
@@ -297,10 +229,6 @@ double *sumRowPow(double *X, int m , int d)
     }
     return A;
 }
-
-
-
-
 
 int partition(double arr[], int l, int r, int *indices)
 {
@@ -368,7 +296,4 @@ double kthSmallest(double arr[], int l, int r, int k, int *indices)
 void quickSelect(double *arr,int l, int r,int k, int *indices){
 
 	kthSmallest(arr, l, r-1, k, indices);
-
-	//printf("k is:%d\n",k);
-	//printf("K-th smallest element is: %lf\n",kthSmallest(arr, 0, n - 1, k));
 }
