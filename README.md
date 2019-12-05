@@ -6,18 +6,18 @@
 
 In the kNN-MPI folder type:
 
-`> make test_sequential
+    > make test_sequential
 
 or
 
-`> make test_synchronous
+    > make test_synchronous
 
 or
 
-`> make test_asynchronous
+    > make test_asynchronous
 
 #### Main Usage
 
 In the src folder type:
 
-`>make knnring_sequential
+    >make knnring_sequential
