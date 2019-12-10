@@ -2,6 +2,11 @@
 
 ### Gonidelis Ioannis - 8794 / Papageorgiou Dimitrios - 8884
 
+### Prerequisites
+`lopenblas` is needed. Use:
+
+    >sudo apt-get install libopenblas-dev
+
 #### Usage for tester
 
 In the kNN-MPI folder type:
