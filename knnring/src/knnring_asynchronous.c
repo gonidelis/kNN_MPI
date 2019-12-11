@@ -4,6 +4,7 @@
 #include <cblas.h>
 #include <mpi.h>
 #include <math.h>
+#include <float.h>
 
 
 knnresult distrAllkNN(double* X, int n,int d,int k)
@@ -32,9 +33,12 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
         corpus[i]=query[i];
     }
 
+    knn_ring.m=n;
+    knn_ring.k=k;
+
     for(int step = 0 ; step < world_size ; step++)
     {
-       
+
         //even processes send first while odd process receive
         //first in order to avoid deadlock - achieve synchronization
         MPI_Request reqsend, reqrecv;
@@ -153,10 +157,29 @@ knnresult distrAllkNN(double* X, int n,int d,int k)
                 corpus[i] = corpus_buff[i];
             }
         }
+
+        //Global Reductions all to all
+        double local_min = DBL_MAX, local_max=-DBL_MAX;
+        for(int i=0 ; i<knn_ring.m*k; i++)
+        {
+            if(knn_ring.ndist[i] != 0 && knn_ring.ndist[i] < local_min)
+            {
+                local_min = knn_ring.ndist[i];
+            }
+            if(knn_ring.ndist[i] > local_max)
+            {
+                local_max = knn_ring.ndist[i];
+            }
+        }
+        double global_min, global_max;
+        MPI_Reduce(&local_min, &global_min, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&local_max, &global_max, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+        
     }
 
-    knn_ring.m=n;
-    knn_ring.k=k;
+
+
+
 
     free(D);
     free(corpus);
